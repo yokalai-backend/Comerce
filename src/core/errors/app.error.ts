@@ -13,13 +13,4 @@ export class AppError extends Error {
 
     Error.captureStackTrace(this, this.constructor);
   }
-
-  toJSON() {
-    return {
-      name: this.name,
-      code: this.code,
-      message: this.message,
-      statusCode: this.statusCode,
-    };
-  }
 }
