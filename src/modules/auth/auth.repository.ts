@@ -67,10 +67,10 @@ export async function deleteTokenRepository(deviceId: string) {
   );
 }
 
-type RefreshTokenErrorType = "rotated" | "security_issues" | "logout";
+type RefreshTokenErrorReason = "rotated" | "security_issues" | "logout";
 
 export async function updateTokenRepository(
-  reason: RefreshTokenErrorType,
+  reason: RefreshTokenErrorReason,
   jti: string,
 ) {
   await pool.query(
