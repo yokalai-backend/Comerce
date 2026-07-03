@@ -3,7 +3,7 @@ import jwt, { JsonWebTokenError, TokenExpiredError } from "jsonwebtoken";
 import env from "../../config/env";
 import errors from "../../errors/errors";
 
-export default function verifyRefreshToken(req: FastifyRequest) {
+export default async function verifyRefreshToken(req: FastifyRequest) {
   const token = req.cookies.refreshToken;
 
   if (!token) throw errors.unAuthorized("Token not provided");

@@ -6,6 +6,7 @@ import {
   createUserRepository,
   getUserById,
   loginUserRepository,
+  updateTokenRepository,
 } from "./auth.repository";
 
 export async function createUser(input: CreateUserInput) {
@@ -38,16 +39,27 @@ export async function loginUser(input: LoginUserInput, deviceId: string) {
 export async function refreshToken(input: RefreshTokenInput) {
   if (!input.deviceId) throw errors.unAuthorized("Please login first");
 
-  const currentRefreshToken = await queryOne(
-    `SELECT jti, device_id FROM refresh_tokens WHERE jti = $1`,
-    [input.jti],
-  );
+  const currentRefreshToken = await queryOne<{
+    jti: string;
+    device_id: string;
+    is_revoked: boolean;
+  }>(`SELECT jti, device_id, is_revoked FROM refresh_tokens WHERE jti = $1`, [
+    input.jti,
+  ]);
 
-  if (!currentRefreshToken)
-    throw errors.unAuthorized(
-      "Reuse token detected, force log out",
-      "TOKEN_REUSED",
-    );
+  if (!currentRefreshToken) {
+    throw errors.unAuthorized("Invalid refresh token");
+  } // EDGE CASES
+
+  if (currentRefreshToken.is_revoked) {
+    await updateTokenRepository("security_issues", input.jti);
+    throw errors.unAuthorized("Token reuse detected", "TOKEN_REUSED");
+  }
+
+  if (currentRefreshToken.device_id !== input.deviceId) {
+    await updateTokenRepository("security_issues", input.jti);
+    throw errors.unAuthorized("Device mismatch", "TOKEN_DEVICE_MISMATCH");
+  }
 
   const user = await getUserById(input.id);
 

@@ -21,6 +21,20 @@ export async function createUserRepository(input: CreateUserRepositoryInput) {
   }
 }
 
+export async function loginUserRepository(input: LoginUserInput) {
+  return queryOne<{ id: string; username: string; role: string; hash: string }>(
+    `SELECT id, username, role, hash FROM users WHERE email = $1`,
+    [input.email],
+  );
+}
+
+export async function getUserById(userId: string) {
+  return queryOne<{ username: string; role: string }>(
+    `SELECT username, role FROM users WHERE id = $1 AND is_active = true`,
+    [userId],
+  );
+}
+
 export async function insertTokenRepository(input: RefreshTokenInput) {
   const client = await pool.connect();
 
@@ -46,16 +60,25 @@ export async function insertTokenRepository(input: RefreshTokenInput) {
   }
 }
 
-export async function loginUserRepository(input: LoginUserInput) {
-  return queryOne<{ id: string; username: string; role: string; hash: string }>(
-    `SELECT id, username, role, hash FROM users WHERE email = $1`,
-    [input.email],
+export async function deleteTokenRepository(deviceId: string) {
+  return queryOne(
+    `DELETE FROM refresh_tokens WHERE device_id = $1 AND is_revoked = false VALUES ($1, $2)`,
+    [deviceId],
   );
 }
 
-export async function getUserById(userId: string) {
-  return queryOne<{ username: string; role: string }>(
-    `SELECT username, role FROM users WHERE id = $1 AND is_active = true`,
-    [userId],
+type RefreshTokenErrorType = "rotated" | "security_issues" | "logout";
+
+export async function updateTokenRepository(
+  reason: RefreshTokenErrorType,
+  jti: string,
+) {
+  await pool.query(
+    `UPDATE refresh_tokens
+     SET revoked_at = NOW(),
+         is_revoked = true,
+         revoke_reason = $1
+     WHERE jti = $2`,
+    [reason, jti],
   );
 }
