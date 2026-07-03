@@ -8,6 +8,8 @@ const env = z.object({
   DB_PASSWORD: z.string(),
   DATABASE: z.string(),
   DB_PORT: z.coerce.number(),
+  ACCESS_TOKEN: z.string(),
+  REFRESH_TOKEN: z.string(),
 });
 
 export default env.parse(process.env);

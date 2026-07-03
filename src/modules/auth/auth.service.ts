@@ -1,6 +1,12 @@
 import errors from "../../core/errors/errors";
 import { hashPassword, verifyPassword } from "../../core/utils/hash/hashing";
-import { createUserRepository, loginUserRepository } from "./auth.repository";
+import { queryOne } from "../../core/utils/query/query";
+import generateTokens from "../../core/utils/tokens/generate.tokens";
+import {
+  createUserRepository,
+  getUserById,
+  loginUserRepository,
+} from "./auth.repository";
 
 export async function createUser(input: CreateUserInput) {
   const hashedPassword = await hashPassword(input.password);
@@ -12,10 +18,45 @@ export async function createUser(input: CreateUserInput) {
   });
 }
 
-export async function loginUser(input: LoginUserInput) {
+export async function loginUser(input: LoginUserInput, deviceId: string) {
   const user = await loginUserRepository(input);
   if (!user?.hash) throw errors.notFound("Password or email invalid");
 
   const verified = verifyPassword(input.password, user.hash);
-  if (!verified) throw errors.authorized("Password or email invalid");
+  if (!verified) throw errors.unAuthorized("Password or email invalid");
+
+  const generatedTokens = await generateTokens({
+    id: user.id,
+    username: user.username,
+    role: user.role,
+    device_id: deviceId,
+  });
+
+  return generatedTokens;
+}
+
+export async function refreshToken(input: RefreshTokenInput) {
+  if (!input.deviceId) throw errors.unAuthorized("Please login first");
+
+  const currentRefreshToken = await queryOne(
+    `SELECT jti, device_id FROM refresh_tokens WHERE jti = $1`,
+    [input.jti],
+  );
+
+  if (!currentRefreshToken)
+    throw errors.unAuthorized(
+      "Reuse token detected, force log out",
+      "TOKEN_REUSED",
+    );
+
+  const user = await getUserById(input.id);
+
+  if (!user?.username) throw errors.notFound("User not found");
+
+  return await generateTokens({
+    id: input.id,
+    username: user.username,
+    role: user.role,
+    device_id: input.deviceId,
+  });
 }
