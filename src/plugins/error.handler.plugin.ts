@@ -8,21 +8,21 @@ function plugin(app: FastifyInstance) {
     if (error instanceof ZodError) {
       const errorMessage = error.issues[0].message;
 
-      rep.notOK(errorMessage, "INPUT_ERROR", 400);
+      rep.notOk(errorMessage, "INPUT_ERROR", 400);
       req.log.warn(error);
 
       return;
     } // INPUT ERROR
 
     if (error instanceof AppError) {
-      rep.notOK(error.message, error.code, error.statusCode);
+      rep.notOk(error.message, error.code, error.statusCode);
 
       req.log.warn(error);
       return;
     } // CONDITIONAL ERROR
 
     req.log.error(error);
-    rep.notOK("Something went wrong", "INTERNAL_ERROR", 500); // UNKNOWN ERROR
+    rep.notOk("Something went wrong", "INTERNAL_ERROR", 500); // UNKNOWN ERROR
   });
 }
 

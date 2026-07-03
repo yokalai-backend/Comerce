@@ -20,7 +20,7 @@ export async function createUser(input: CreateUserInput) {
 
 export async function loginUser(input: LoginUserInput, deviceId: string) {
   const user = await loginUserRepository(input);
-  if (!user?.hash) throw errors.notFound("Password or email invalid");
+  if (!user?.hash) throw errors.unAuthorized("Password or email invalid");
 
   const verified = verifyPassword(input.password, user.hash);
   if (!verified) throw errors.unAuthorized("Password or email invalid");
