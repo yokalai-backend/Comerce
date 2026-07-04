@@ -9,7 +9,7 @@ function plugin(app: FastifyInstance) {
       const errorMessage = error.issues[0].message;
 
       rep.notOk(errorMessage, "INPUT_ERROR", 400);
-      req.log.warn(error);
+      req.log.warn(error.issues.slice(0, 3), "Input zod invalidation error");
 
       return;
     } // INPUT ERROR

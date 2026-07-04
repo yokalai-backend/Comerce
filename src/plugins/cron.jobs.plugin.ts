@@ -9,19 +9,19 @@ function plugin(app: FastifyInstance) {
     TWO_AM_EVERY_SUNDAY,
     async () => {
       try {
-        app.log.info("[__CRON] Running refresh tokens clean up");
+        app.log.info("[__CRON] Running revoked tokens clean up");
 
         const cleanedRows =
-          await executeQuery(`DELETE FROM refresh_tokens WHERE id IN (
-            SELECT id FROM refresh_tokens WHERE revoke_reason IN ('rotated', 'logout')
-            AND expires_at < NOW() ORDER BY created_at ASC LIMIT 500 
+          await executeQuery(`DELETE FROM revoked_tokens WHERE id IN (
+            SELECT id FROM revoked_tokens WHERE revoke_reason IN ('rotated', 'logout', 'refreshed')
+            ORDER BY revoked_at ASC LIMIT 500 
         )`);
 
         app.log.info(
-          `[__CRON] Cleaned refresh tokens rows: ${cleanedRows.rowCount}`,
+          `[__CRON] Cleaned revoked tokens rows: ${cleanedRows.rowCount}`,
         );
       } catch (error) {
-        app.log.error(error, `[__CRON] Failed cleaning refresh tokens`);
+        app.log.error(error, `[__CRON] Failed cleaning revoked tokens`);
       }
     },
     { timezone: TIME_ZONE_JAKARTA_INDONESIA },

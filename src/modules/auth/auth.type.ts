@@ -39,3 +39,9 @@ interface RefreshTokenInput {
   jti: string;
   deviceId: string;
 }
+
+type RefreshTokenErrorReason =
+  | "rotated"
+  | "security_issues"
+  | "logout"
+  | "refreshed";

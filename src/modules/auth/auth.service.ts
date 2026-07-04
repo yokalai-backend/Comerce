@@ -5,8 +5,9 @@ import generateTokens from "../../core/utils/tokens/generate.tokens";
 import {
   createUserRepository,
   getUserById,
+  insertTokenRepository,
   loginUserRepository,
-  updateTokenRepository,
+  revokeTokenRepository,
 } from "./auth.repository";
 
 export async function createUser(input: CreateUserInput) {
@@ -48,16 +49,18 @@ export async function refreshToken(input: RefreshTokenInput) {
   ]);
 
   if (!currentRefreshToken) {
-    throw errors.unAuthorized("Invalid refresh token");
+    throw errors.unAuthorized(
+      "Invalid refresh token, please try to login again",
+    );
   } // EDGE CASES
 
   if (currentRefreshToken.is_revoked) {
-    await updateTokenRepository("security_issues", input.jti);
+    await revokeTokenRepository(input.id, input.deviceId, "security_issues");
     throw errors.unAuthorized("Token reuse detected", "TOKEN_REUSED");
   }
 
   if (currentRefreshToken.device_id !== input.deviceId) {
-    await updateTokenRepository("security_issues", input.jti);
+    await revokeTokenRepository(input.id, input.deviceId, "security_issues");
     throw errors.unAuthorized("Device mismatch", "TOKEN_DEVICE_MISMATCH");
   }
 

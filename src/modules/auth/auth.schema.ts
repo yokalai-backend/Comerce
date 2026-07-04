@@ -20,3 +20,8 @@ export const createUserSchema = z.object({
     .regex(/[^a-zA-Z0-9]/, "Password must contain a special character"),
   email: z.email("Invalid email address").max(254, "Email too long"),
 });
+
+export const loginUserSchema = z.object({
+  password: z.string().min(1, "Password required"),
+  email: z.email("Invalid email address"),
+});

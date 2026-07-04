@@ -8,7 +8,6 @@ export class AppError extends Error {
     this.name = this.constructor.name;
     this.code = code;
     this.statusCode = statusCode;
-
     Object.setPrototypeOf(this, new.target.prototype);
 
     Error.captureStackTrace(this, this.constructor);

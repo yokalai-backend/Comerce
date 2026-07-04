@@ -2,6 +2,7 @@ import { FastifyReply, FastifyRequest } from "fastify";
 import setDeviceIdCookie from "../../core/utils/cookie/set.device.id.cookie";
 import setTokensCookie from "../../core/utils/cookie/set.tokens.cookie";
 import { createUser, loginUser, refreshToken } from "./auth.service";
+import { revokeTokenRepository } from "./auth.repository";
 
 export async function createUserController(
   req: FastifyRequest<{ Body: CreateUserInput }>,
@@ -48,4 +49,16 @@ export async function refreshTokenController(
   });
 
   return rep.ok("Token refreshed");
+}
+
+export async function logoutUserController(
+  req: FastifyRequest,
+  rep: FastifyReply,
+) {
+  const deviceId = req.cookies.deviceId;
+  const verifiedRefreshToken = req.refreshToken;
+
+  await revokeTokenRepository(verifiedRefreshToken.id, deviceId!, "logout");
+
+  return rep.ok("Logout successfull");
 }

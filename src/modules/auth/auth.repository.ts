@@ -1,9 +1,8 @@
 import { DatabaseError } from "pg";
-import { queryOne } from "../../core/utils/query/query";
-import errors from "../../core/errors/errors";
+import { PG_UNIQUE_VIOLATION } from "../../constant";
 import pool from "../../core/config/db";
-
-const PG_UNIQUE_VIOLATION = "23505";
+import errors from "../../core/errors/errors";
+import { executeQuery, queryOne } from "../../core/utils/query/query";
 
 export async function createUserRepository(input: CreateUserRepositoryInput) {
   try {
@@ -41,9 +40,17 @@ export async function insertTokenRepository(input: RefreshTokenInput) {
   try {
     await client.query(`BEGIN`);
 
-    await client.query(`DELETE FROM refresh_tokens WHERE device_id = $1`, [
-      input.deviceId,
-    ]);
+    const deleteCurrentToken = await client.query(
+      `DELETE FROM refresh_tokens WHERE device_id = $1 RETURNING id`,
+      [input.deviceId],
+    );
+
+    if (deleteCurrentToken.rowCount) {
+      await client.query(
+        `INSERT INTO revoked_tokens (user_id, device_id, revoke_reason) VALUES ($1, $2, 'refreshed')`,
+        [input.id, input.deviceId],
+      );
+    }
 
     await client.query(
       `INSERT INTO refresh_tokens (user_id, jti, device_id) VALUES ($1, $2, $3)`,
@@ -60,25 +67,32 @@ export async function insertTokenRepository(input: RefreshTokenInput) {
   }
 }
 
-export async function deleteTokenRepository(deviceId: string) {
-  return queryOne(
-    `DELETE FROM refresh_tokens WHERE device_id = $1 AND is_revoked = false VALUES ($1, $2)`,
-    [deviceId],
-  );
-}
-
-type RefreshTokenErrorReason = "rotated" | "security_issues" | "logout";
-
-export async function updateTokenRepository(
+export async function revokeTokenRepository(
+  userId: string,
+  deviceId: string,
   reason: RefreshTokenErrorReason,
-  jti: string,
 ) {
-  await pool.query(
-    `UPDATE refresh_tokens
-     SET revoked_at = NOW(),
-         is_revoked = true,
-         revoke_reason = $1
-     WHERE jti = $2`,
-    [reason, jti],
-  );
+  if (!deviceId) throw errors.unAuthorized("Device not found");
+
+  const client = await pool.connect();
+
+  try {
+    await client.query(`BEGIN`);
+
+    await client.query(`DELETE FROM refresh_tokens WHERE device_id = $1`, [
+      deviceId,
+    ]);
+    await client.query(
+      `INSERT INTO revoked_tokens (user_id, device_id, revoke_reason) VALUES ($1, $2, $3)`,
+      [userId, deviceId, reason],
+    );
+
+    await client.query(`COMMIT`);
+  } catch (error) {
+    await client.query(`ROLLBACK`);
+
+    throw error;
+  } finally {
+    client.release();
+  }
 }

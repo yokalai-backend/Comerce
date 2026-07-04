@@ -14,6 +14,7 @@ function plugin(app: FastifyInstance) {
         success: true,
         message,
         data: data ?? null,
+        code: null,
       });
     },
   );

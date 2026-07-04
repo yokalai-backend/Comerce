@@ -10,6 +10,7 @@ const env = z.object({
   DB_PORT: z.coerce.number(),
   ACCESS_TOKEN: z.string(),
   REFRESH_TOKEN: z.string(),
+  REDIS_URL: z.string(),
 });
 
 export default env.parse(process.env);
