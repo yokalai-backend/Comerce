@@ -5,7 +5,7 @@ import { TIME_ZONE_JAKARTA_INDONESIA, TWO_AM_EVERY_SUNDAY } from "../constant";
 import { executeQuery } from "../core/utils/query/query";
 
 function plugin(app: FastifyInstance) {
-  const task = nodeCron.schedule(
+  const revokedTokensCleanUp = nodeCron.schedule(
     TWO_AM_EVERY_SUNDAY,
     async () => {
       try {
@@ -18,7 +18,7 @@ function plugin(app: FastifyInstance) {
         )`);
 
         app.log.info(
-          `[__CRON] Cleaned revoked tokens rows: ${cleanedRows.rowCount}`,
+          `[__CRON] Total cleaned revoked tokens: ${cleanedRows.rowCount}`,
         );
       } catch (error) {
         app.log.error(error, `[__CRON] Failed cleaning revoked tokens`);
@@ -27,8 +27,31 @@ function plugin(app: FastifyInstance) {
     { timezone: TIME_ZONE_JAKARTA_INDONESIA },
   ); // AUTO START AT 2 AM EVERY SUNDAY
 
+  const connectedDevicesCleanUp = nodeCron.schedule(
+    TWO_AM_EVERY_SUNDAY,
+    async () => {
+      try {
+        app.log.info("[__CRON] Running connected devices clean up");
+
+        const cleanedRows = await executeQuery(`
+            DELETE FROM devices WHERE id IN (
+            SELECT id FROM devices WHERE created_at < NOW() - INTERVAL '30 days' 
+            ORDER BY created_at ASC
+          )`);
+
+        app.log.info(
+          `[__CRON] Total cleaned connected devices rows: ${cleanedRows.rowCount}`,
+        );
+      } catch (error) {
+        app.log.error(error, `[__CRON] Failed cleaning connected devices`);
+      }
+    },
+    { timezone: TIME_ZONE_JAKARTA_INDONESIA },
+  );
+
   app.addHook("onClose", async () => {
-    task.stop();
+    revokedTokensCleanUp.stop();
+    connectedDevicesCleanUp.stop();
   });
 }
 

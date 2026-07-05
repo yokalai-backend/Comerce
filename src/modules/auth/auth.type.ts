@@ -1,3 +1,5 @@
+// INPUT
+
 interface CreateUserInput {
   username: string;
   email: string;
@@ -13,6 +15,11 @@ interface CreateUserRepositoryInput {
 interface LoginUserInput {
   email: string;
   password: string;
+}
+
+interface LoginDeviceInput {
+  ipAddr: string;
+  deviceAgent: string;
 }
 
 // TOKEN
@@ -45,3 +52,20 @@ type RefreshTokenErrorReason =
   | "security_issues"
   | "logout"
   | "refreshed";
+
+// USER
+type UserRawDB = {
+  id: string;
+  username: string;
+  role: string;
+  hash: string;
+};
+
+type UserDevicesRawDB = {
+  id: string;
+  user_id: string;
+  device_id: string;
+  agent: string;
+  ip_addr: string;
+  created_at: Date;
+};

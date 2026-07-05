@@ -16,9 +16,14 @@ export async function loginUserController(
   req: FastifyRequest<{ Body: LoginUserInput }>,
   rep: FastifyReply,
 ) {
+  const deviceInput = {
+    ipAddr: req.ip,
+    deviceAgent: req.headers["user-agent"] ?? "no agents",
+  };
+
   const deviceId = setDeviceIdCookie(req, rep);
 
-  const tokens = await loginUser(req.body, deviceId);
+  const tokens = await loginUser(req.body, deviceInput, deviceId);
 
   setTokensCookie(rep, {
     accessToken: tokens.signedAccessToken,

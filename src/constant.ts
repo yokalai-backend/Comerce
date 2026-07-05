@@ -13,3 +13,4 @@ export const TIME_ZONE_JAKARTA_INDONESIA = "Asia/Jakarta";
 
 // PG VIOLATION
 export const PG_UNIQUE_VIOLATION = "23505";
+export const PG_CHECK_VIOLATION = "23514";

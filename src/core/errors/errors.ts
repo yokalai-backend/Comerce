@@ -9,6 +9,8 @@ const errors = {
     new AppError(message, code ?? "BAD_REQUEST", 400),
   conflict: (message: string, code?: string) =>
     new AppError(message, code ?? "CONFLICT", 409),
+  tooMany: (message: string, code?: string) =>
+    new AppError(message, code ?? "TOO_MANY_REQUESTS", 429),
 };
 
 export default errors;

@@ -5,7 +5,6 @@ import generateTokens from "../../core/utils/tokens/generate.tokens";
 import {
   createUserRepository,
   getUserById,
-  insertTokenRepository,
   loginUserRepository,
   revokeTokenRepository,
 } from "./auth.repository";
@@ -20,19 +19,27 @@ export async function createUser(input: CreateUserInput) {
   });
 }
 
-export async function loginUser(input: LoginUserInput, deviceId: string) {
-  const user = await loginUserRepository(input);
-  if (!user?.hash) throw errors.unAuthorized("Password or email invalid");
+export async function loginUser(
+  input: LoginUserInput,
+  deviceInput: LoginDeviceInput,
+  deviceId: string,
+) {
+  const user = await loginUserRepository(input, deviceInput, deviceId);
+
+  if (!user?.id) throw errors.unAuthorized("Password or email invalid");
 
   const verified = verifyPassword(input.password, user.hash);
   if (!verified) throw errors.unAuthorized("Password or email invalid");
 
-  const generatedTokens = await generateTokens({
-    id: user.id,
-    username: user.username,
-    role: user.role,
-    device_id: deviceId,
-  });
+  const generatedTokens = await generateTokens(
+    {
+      id: user.id,
+      username: user.username,
+      role: user.role,
+      device_id: deviceId,
+    },
+    "logout",
+  );
 
   return generatedTokens;
 }
@@ -68,10 +75,13 @@ export async function refreshToken(input: RefreshTokenInput) {
 
   if (!user?.username) throw errors.notFound("User not found");
 
-  return await generateTokens({
-    id: input.id,
-    username: user.username,
-    role: user.role,
-    device_id: input.deviceId,
-  });
+  return await generateTokens(
+    {
+      id: input.id,
+      username: user.username,
+      role: user.role,
+      device_id: input.deviceId,
+    },
+    "refreshed",
+  );
 }

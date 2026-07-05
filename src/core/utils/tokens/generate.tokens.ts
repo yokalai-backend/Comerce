@@ -7,7 +7,10 @@ import {
 import { insertTokenRepository } from "../../../modules/auth/auth.repository";
 import env from "../../config/env";
 
-export default async function generateTokens(input: TokenInput) {
+export default async function generateTokens(
+  input: TokenInput,
+  reason: RefreshTokenErrorReason,
+) {
   const accessTokenPayload = {
     id: input.id,
     username: input.username,
@@ -29,7 +32,10 @@ export default async function generateTokens(input: TokenInput) {
     expiresIn: REFRESH_TOKEN_EXPIRES_TIME,
   });
 
-  await insertTokenRepository({ id: input.id, jti, deviceId: input.device_id });
+  await insertTokenRepository(
+    { id: input.id, jti, deviceId: input.device_id },
+    reason,
+  );
 
   return { signedAccessToken, signedRefreshToken };
 }

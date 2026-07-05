@@ -2,6 +2,7 @@ import fastifyRateLimit from "@fastify/rate-limit";
 import { FastifyInstance } from "fastify";
 import fp from "fastify-plugin";
 import redis from "../core/config/redis";
+import errors from "../core/errors/errors";
 
 function plugin(app: FastifyInstance) {
   app.register(fastifyRateLimit, {
@@ -9,18 +10,13 @@ function plugin(app: FastifyInstance) {
     timeWindow: "1 minute",
     redis,
     nameSpace: "rate-limit",
-    errorResponseBuilder: async (req, ctx) => {
+    errorResponseBuilder: (req, ctx) => {
       app.log.warn(
         { ...ctx, ip: req.ip, url: req.url, method: req.method },
         `Rate limit exceeded`,
       );
 
-      return {
-        success: false,
-        message: "Too Many Requests",
-        data: null,
-        code: "TOO_MANY_REQUESTS",
-      };
+      return errors.tooMany("Too many requests");
     },
   });
 }

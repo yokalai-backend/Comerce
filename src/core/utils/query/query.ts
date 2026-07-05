@@ -9,6 +9,6 @@ export async function queryOne<T>(
   return res.rows[0];
 }
 
-export async function executeQuery(query: string) {
-  return pool.query(query);
+export async function executeQuery(query: string, values?: unknown[]) {
+  return pool.query(query, values);
 }

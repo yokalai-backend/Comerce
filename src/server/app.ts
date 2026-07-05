@@ -11,9 +11,9 @@ export default function buildApp() {
 
   // PLUGINS
   app.register(fastifyCookie);
+  app.register(rateLimitHandlerPlugin);
   app.register(responsePlugin);
   app.register(errorHandlerPlugin);
-  app.register(rateLimitHandlerPlugin);
 
   // CRON
   app.register(cronJobsPlugin);
