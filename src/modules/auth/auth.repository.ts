@@ -6,8 +6,8 @@ import { queryOne } from "../../core/utils/query/query";
 
 export async function createUserRepository(input: CreateUserRepositoryInput) {
   try {
-    await queryOne(
-      `INSERT INTO users (username, email, hash) VALUES ($1, $2, $3) RETURNING id`,
+    return await queryOne<{ id: string; username: string; email: string }>(
+      `INSERT INTO users (username, email, hash) VALUES ($1, $2, $3) RETURNING id, username, email`,
       [input.username, input.email, input.passwordHash],
     );
   } catch (error) {
@@ -53,8 +53,6 @@ export async function loginUserRepository(
       `SELECT id FROM devices WHERE user_id = $1 FOR UPDATE`,
       [user.rows[0].id],
     );
-
-    console.log("CONNECTED DEVICES: ", connectedDevices.rowCount);
 
     if (connectedDevices.rowCount && connectedDevices.rowCount >= 5)
       throw errors.badRequest(

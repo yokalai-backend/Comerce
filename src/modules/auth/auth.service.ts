@@ -1,3 +1,5 @@
+import { FastifyInstance } from "fastify";
+import { postData } from "../../core/api/api";
 import errors from "../../core/errors/errors";
 import { hashPassword, verifyPassword } from "../../core/utils/hash/hashing";
 import { queryOne } from "../../core/utils/query/query";
@@ -9,14 +11,27 @@ import {
   revokeTokenRepository,
 } from "./auth.repository";
 
-export async function createUser(input: CreateUserInput) {
+export async function createUser(input: CreateUserInput, f: FastifyInstance) {
   const hashedPassword = await hashPassword(input.password);
 
-  await createUserRepository({
+  const user = await createUserRepository({
     username: input.username,
     email: input.email,
     passwordHash: hashedPassword,
   });
+
+  f.rabbitmq.channel.publish(
+    "user_events",
+    "user.created",
+    Buffer.from(
+      JSON.stringify({
+        userId: user!.id,
+        username: user!.username,
+        email: user!.email,
+      }),
+    ),
+    { persistent: true, messageId: user!.id },
+  );
 }
 
 export async function loginUser(

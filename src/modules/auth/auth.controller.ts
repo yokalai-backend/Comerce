@@ -8,7 +8,7 @@ export async function createUserController(
   req: FastifyRequest<{ Body: CreateUserInput }>,
   rep: FastifyReply,
 ) {
-  await createUser(req.body);
+  await createUser(req.body, req.server);
   return rep.ok("User registered successfully", null, 201);
 }
 

@@ -11,6 +11,8 @@ const env = z.object({
   ACCESS_TOKEN: z.string(),
   REFRESH_TOKEN: z.string(),
   REDIS_URL: z.string(),
+  INTERNAL_KEY: z.string(),
+  AMQP_URL: z.string(),
 });
 
 export default env.parse(process.env);

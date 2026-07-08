@@ -4,12 +4,12 @@ import nodeCron from "node-cron";
 import { TIME_ZONE_JAKARTA_INDONESIA, TWO_AM_EVERY_SUNDAY } from "../constant";
 import { executeQuery } from "../core/utils/query/query";
 
-function plugin(app: FastifyInstance) {
+function plugin(f: FastifyInstance) {
   const revokedTokensCleanUp = nodeCron.schedule(
     TWO_AM_EVERY_SUNDAY,
     async () => {
       try {
-        app.log.info("[__CRON] Running revoked tokens clean up");
+        f.log.info("[__CRON] Running revoked tokens clean up");
 
         const cleanedRows =
           await executeQuery(`DELETE FROM revoked_tokens WHERE id IN (
@@ -17,11 +17,11 @@ function plugin(app: FastifyInstance) {
             ORDER BY revoked_at ASC LIMIT 500 
         )`);
 
-        app.log.info(
+        f.log.info(
           `[__CRON] Total cleaned revoked tokens: ${cleanedRows.rowCount}`,
         );
       } catch (error) {
-        app.log.error(error, `[__CRON] Failed cleaning revoked tokens`);
+        f.log.error(error, `[__CRON] Failed cleaning revoked tokens`);
       }
     },
     { timezone: TIME_ZONE_JAKARTA_INDONESIA },
@@ -31,7 +31,7 @@ function plugin(app: FastifyInstance) {
     TWO_AM_EVERY_SUNDAY,
     async () => {
       try {
-        app.log.info("[__CRON] Running connected devices clean up");
+        f.log.info("[__CRON] Running connected devices clean up");
 
         const cleanedRows = await executeQuery(`
             DELETE FROM devices WHERE id IN (
@@ -39,17 +39,17 @@ function plugin(app: FastifyInstance) {
             ORDER BY created_at ASC
           )`);
 
-        app.log.info(
+        f.log.info(
           `[__CRON] Total cleaned connected devices rows: ${cleanedRows.rowCount}`,
         );
       } catch (error) {
-        app.log.error(error, `[__CRON] Failed cleaning connected devices`);
+        f.log.error(error, `[__CRON] Failed cleaning connected devices`);
       }
     },
     { timezone: TIME_ZONE_JAKARTA_INDONESIA },
   );
 
-  app.addHook("onClose", async () => {
+  f.addHook("onClose", async () => {
     revokedTokensCleanUp.stop();
     connectedDevicesCleanUp.stop();
   });

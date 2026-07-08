@@ -11,6 +11,8 @@ const errors = {
     new AppError(message, code ?? "CONFLICT", 409),
   tooMany: (message: string, code?: string) =>
     new AppError(message, code ?? "TOO_MANY_REQUESTS", 429),
+  forbidden: (message: string, code?: string) =>
+    new AppError(message, code ?? "FORBIDDEN", 403),
 };
 
 export default errors;
