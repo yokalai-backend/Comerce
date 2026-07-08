@@ -7,7 +7,6 @@ function plugin(f: FastifyInstance) {
   f.addHook(
     "onRequest",
     async (req: FastifyRequest<{ Headers: { "X-Internal-Key": string } }>) => {
-      console.log(req.headers);
       const internalKey = req.headers["x-internal-key"];
 
       if (!internalKey || internalKey !== env.INTERNAL_KEY)

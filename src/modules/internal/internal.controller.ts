@@ -1,18 +1,13 @@
 import { FastifyRequest, FastifyReply } from "fastify";
-import { insertUserProfilesRepository } from "./internal.repository";
+import { createUserProfilesRepository } from "./internal.repository";
 
-interface InsertUserProfilesInput {
-  userId: string;
-  username: string;
-}
-
-export async function insertUserProfilesController(
-  req: FastifyRequest<{ Body: InsertUserProfilesInput }>,
+export async function createUserProfilesController(
+  req: FastifyRequest<{ Body: createUserProfilesInput }>,
   rep: FastifyReply,
 ) {
   const input = req.body;
 
-  await insertUserProfilesRepository(input);
+  await createUserProfilesRepository(input);
 
   return rep.internalOk();
 }

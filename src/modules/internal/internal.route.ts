@@ -1,6 +1,6 @@
 import { FastifyInstance } from "fastify";
-import { insertUserProfilesController } from "./internal.controller";
 import validateInternalKeyPlugin from "../../plugins/validate.internal.key.plugin";
+import { createUserProfilesController } from "./internal.controller";
 
 export default function internalRoute(app: FastifyInstance) {
   app.register(validateInternalKeyPlugin);
@@ -9,5 +9,5 @@ export default function internalRoute(app: FastifyInstance) {
     rep.internalOk("Responded");
   });
 
-  app.post("/user", insertUserProfilesController);
+  app.post("/user", createUserProfilesController);
 }
