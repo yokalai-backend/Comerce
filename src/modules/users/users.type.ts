@@ -20,6 +20,13 @@ interface UserAddressesRawDB {
   is_default: boolean;
 }
 
+interface UserUpdatedProfilesRawDB {
+  full_name: string;
+  avatar_url: string;
+  phone_number: number;
+  updated_at: string;
+}
+
 // DTO
 interface UserProfilesDTO {
   id: string;
@@ -33,7 +40,6 @@ interface UserProfilesDTO {
 }
 
 // QUERY
-
 interface UpdateUserProfilesDetailsInput {
   fullName: string;
   avatarUrl: string;

@@ -1,8 +1,18 @@
 import errors from "../../core/errors/errors";
+import userMapper from "./users.mapper";
 import {
+  getUserProfilesByIdRepository,
   patchUserBirthDateRepository,
   updateUserProfilesDetailsRepository,
 } from "./users.repository";
+
+export async function getUserProfilesById(userId: string) {
+  const res = await getUserProfilesByIdRepository(userId);
+
+  if (!res) throw errors.notFound("User not found");
+
+  return userMapper.toUserProfilesDTO(res);
+}
 
 export async function updateUserProfilesDetails(
   userId: string,
@@ -15,7 +25,9 @@ export async function updateUserProfilesDetails(
 
   if (unUpdatedFields >= 3) throw errors.badRequest("No field can be updated");
 
-  return updateUserProfilesDetailsRepository(userId, input);
+  const res = await updateUserProfilesDetailsRepository(userId, input);
+
+  return userMapper.toUserUpdatedProfilesDTO(res);
 }
 
 export async function patchUserBirthDate(userId: string, birthDate: Date) {

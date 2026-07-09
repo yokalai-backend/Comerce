@@ -20,18 +20,8 @@ export const updateUserProfilesSchema = z.object({
 });
 
 export const patchBirthDateSchema = z.object({
-  birthDate: z.date(),
+  birthDate: z.coerce.date(),
 });
-
-interface UserAddressesRawDB {
-  id: string;
-  user_id: string;
-  label: string;
-  street_address: string;
-  city: string;
-  country: string;
-  is_default: boolean;
-}
 
 const countries = new Set(getNames());
 

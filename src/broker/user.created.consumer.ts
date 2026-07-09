@@ -1,6 +1,6 @@
 import { FastifyInstance } from "fastify";
 import fp from "fastify-plugin";
-import { insertUserProfilesRepository } from "../modules/internal/internal.repository";
+import { createUserProfilesRepository } from "../modules/internal/internal.repository";
 
 async function plugin(f: FastifyInstance) {
   const { channel } = f.rabbitmq;
@@ -21,9 +21,9 @@ async function plugin(f: FastifyInstance) {
       try {
         const data = JSON.parse(
           msg.content.toString(),
-        ) as InsertUserProfilesInput;
+        ) as createUserProfilesInput;
 
-        await insertUserProfilesRepository({
+        await createUserProfilesRepository({
           userId: data.userId,
           username: data.username,
           email: data.email,

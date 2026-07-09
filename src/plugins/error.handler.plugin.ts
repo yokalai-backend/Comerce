@@ -16,6 +16,7 @@ function plugin(f: FastifyInstance) {
     }
 
     if (error instanceof AppError) {
+      console.log("ERROR: ", error);
       rep.notOk(error.message, error.code, error.statusCode);
 
       req.log.warn(error);

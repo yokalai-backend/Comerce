@@ -1,13 +1,16 @@
 import { FastifyReply, FastifyRequest } from "fastify";
-import { getUserProfilesByIdRepository } from "./users.repository";
-import { patchUserBirthDate, updateUserProfilesDetails } from "./users.service";
+import {
+  getUserProfilesById,
+  patchUserBirthDate,
+  updateUserProfilesDetails,
+} from "./users.service";
 
 export async function getUserProfilesByIdController(
   req: FastifyRequest,
   rep: FastifyReply,
 ) {
   const userId = req.user.id;
-  const res = await getUserProfilesByIdRepository(userId);
+  const res = await getUserProfilesById(userId);
 
   return rep.ok("Received user profiles", res);
 }
@@ -19,9 +22,9 @@ export async function updateUserProfilesDetailsController(
   const userId = req.user.id;
   const input = req.body;
 
-  await updateUserProfilesDetails(userId, input);
+  const res = await updateUserProfilesDetails(userId, input);
 
-  rep.ok("User profiles updated");
+  rep.ok("User profiles updated", res);
 }
 
 export async function patchUserBirthDateController(

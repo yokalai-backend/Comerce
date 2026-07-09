@@ -1,8 +1,8 @@
 import { DatabaseError } from "pg";
+import { PG_UNIQUE_VIOLATION } from "../../constant";
 import pool from "../../core/config/db";
 import errors from "../../core/errors/errors";
 import { executeQuery, queryOne } from "../../core/utils/query/query";
-import { PG_UNIQUE_VIOLATION } from "../../../constant";
 
 export async function getUserProfilesByIdRepository(userId: string) {
   return queryOne<UserProfilesRawDB>(
@@ -34,8 +34,8 @@ export async function updateUserProfilesDetailsRepository(
     query.push(`phone_number = $${++index}`);
   }
 
-  return executeQuery(
-    `UPDATE user_profiles SET ${query.join(", ")} WHERE user_id = $1`,
+  return queryOne<UserUpdatedProfilesRawDB>(
+    `UPDATE user_profiles SET ${query.join(", ")}, updated_at = NOW() WHERE user_id = $1 RETURNING full_name, avatar_url, phone_number, updated_at`,
     values,
   );
 }

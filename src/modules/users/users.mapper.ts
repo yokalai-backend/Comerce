@@ -11,4 +11,14 @@ const userMapper = {
       updatedAt: data.updated_at,
     };
   },
+  toUserUpdatedProfilesDTO: (data?: UserUpdatedProfilesRawDB) => {
+    return {
+      updatedFullName: data?.full_name,
+      updatedAvatarUrl: data?.avatar_url,
+      updatedPhoneNumber: data?.phone_number,
+      updatedAt: data?.updated_at,
+    };
+  },
 };
+
+export default userMapper;

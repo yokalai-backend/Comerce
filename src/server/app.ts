@@ -5,12 +5,14 @@ import { userRoute } from "../modules/users/users.route";
 import rabbitMqPlugin from "../plugins/rabbit.mq.plugin";
 import responsePlugin from "../plugins/response.plugin";
 import userCreatedConsumer from "../broker/user.created.consumer";
+import errorHandlerPlugin from "../plugins/error.handler.plugin";
 
 export default function buildApp() {
   const app = fastify({ logger: true, trustProxy: true });
 
   app.register(fastifyCookie);
   app.register(responsePlugin);
+  app.register(errorHandlerPlugin);
   app.register(rabbitMqPlugin);
   app.register(userCreatedConsumer);
 

@@ -28,7 +28,7 @@ function plugin(f: FastifyInstance) {
       statusCode: number,
     ) {
       return this.code(statusCode).send({
-        success: true,
+        success: false,
         message,
         data: null,
         code,
