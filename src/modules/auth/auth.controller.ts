@@ -1,8 +1,9 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import setDeviceIdCookie from "../../core/utils/cookie/set.device.id.cookie";
 import setTokensCookie from "../../core/utils/cookie/set.tokens.cookie";
-import { createUser, loginUser, refreshToken } from "./auth.service";
-import { revokeTokenRepository } from "./auth.repository";
+import { getTokenRepository, revokeTokenRepository } from "./auth.repository";
+import { createUser, loginUser, logout, refreshToken } from "./auth.service";
+import errors from "../../core/errors/errors";
 
 export async function createUserController(
   req: FastifyRequest<{ Body: CreateUserInput }>,
@@ -16,6 +17,7 @@ export async function loginUserController(
   req: FastifyRequest<{ Body: LoginUserInput }>,
   rep: FastifyReply,
 ) {
+  const previousJti = req.refreshToken?.jti;
   const deviceInput = {
     ipAddr: req.ip,
     deviceAgent: req.headers["user-agent"] ?? "no agents",
@@ -23,7 +25,7 @@ export async function loginUserController(
 
   const deviceId = setDeviceIdCookie(req, rep);
 
-  const tokens = await loginUser(req.body, deviceInput, deviceId);
+  const tokens = await loginUser(req.body, deviceInput, deviceId, previousJti);
 
   setTokensCookie(rep, {
     accessToken: tokens.signedAccessToken,
@@ -37,13 +39,22 @@ export async function refreshTokenController(
   req: FastifyRequest,
   rep: FastifyReply,
 ) {
-  const deviceId = setDeviceIdCookie(req, rep);
+  const ipAddress = req.ip;
+  const rawDevieId = req.cookies.deviceId;
+
+  if (!rawDevieId) {
+    throw errors.unAuthorized("Device id not provided");
+  }
+  const cookieResult = req.unsignCookie(rawDevieId);
+  if (!cookieResult.valid) throw errors.unAuthorized("Invalid device");
+
   const verifiedRefreshToken = req.refreshToken;
 
-  const refreshTokenInput = {
-    deviceId,
+  const refreshTokenInput: RefreshTokenInput = {
     id: verifiedRefreshToken.id,
     jti: verifiedRefreshToken.jti,
+    deviceId: cookieResult.value,
+    ipAddress,
   };
 
   const tokens = await refreshToken(refreshTokenInput);
@@ -60,10 +71,25 @@ export async function logoutUserController(
   req: FastifyRequest,
   rep: FastifyReply,
 ) {
-  const deviceId = req.cookies.deviceId;
+  const ipAddress = req.ip;
+  const rawDevieId = req.cookies.deviceId;
+
+  if (!rawDevieId) {
+    throw errors.unAuthorized("Device id not provided");
+  }
+  const cookieResult = req.unsignCookie(rawDevieId);
+  if (!cookieResult.valid) throw errors.unAuthorized("Invalid device");
+
   const verifiedRefreshToken = req.refreshToken;
 
-  await revokeTokenRepository(verifiedRefreshToken.id, deviceId!, "logout");
+  const refreshTokenInput: RefreshTokenInput = {
+    id: verifiedRefreshToken.id,
+    jti: verifiedRefreshToken.jti,
+    deviceId: cookieResult.value,
+    ipAddress,
+  };
+
+  await logout(verifiedRefreshToken.jti, refreshTokenInput);
 
   return rep.ok("Logout successfull");
 }

@@ -29,11 +29,10 @@ interface Tokens {
   refreshToken: string;
 }
 
-interface TokenInput {
+interface AccessTokenInput {
   id: string;
   username: string;
   role: string;
-  device_id: string;
 }
 
 interface RefreshTokenPayload {
@@ -45,13 +44,21 @@ interface RefreshTokenInput {
   id: string;
   jti: string;
   deviceId: string;
+  ipAddress: string;
 }
 
-type RefreshTokenErrorReason =
-  | "rotated"
-  | "security_issues"
+interface InsertTokenInput {
+  id: string;
+  deviceId: string;
+  ipAddress: string;
+}
+
+type RefreshedTokenReason =
+  | "reuse_attempt"
   | "logout"
-  | "refreshed";
+  | "refreshed"
+  | "login"
+  | "device_mismatch";
 
 // USER
 type UserRawDB = {

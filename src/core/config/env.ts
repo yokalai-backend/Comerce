@@ -13,6 +13,7 @@ const env = z.object({
   REDIS_URL: z.string(),
   INTERNAL_KEY: z.string(),
   AMQP_URL: z.string(),
+  COOKIE_SECRET: z.string(),
 });
 
 export default env.parse(process.env);

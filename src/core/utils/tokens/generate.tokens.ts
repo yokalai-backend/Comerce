@@ -8,19 +8,21 @@ import { insertTokenRepository } from "../../../modules/auth/auth.repository";
 import env from "../../config/env";
 
 export default async function generateTokens(
-  input: TokenInput,
-  reason: RefreshTokenErrorReason,
+  insertTokenInput: InsertTokenInput,
+  accessTokenInput: AccessTokenInput,
+  reason: RefreshedTokenReason,
+  previousJti: string,
 ) {
   const accessTokenPayload = {
-    id: input.id,
-    username: input.username,
-    role: input.role,
+    id: accessTokenInput.id,
+    username: accessTokenInput.username,
+    role: accessTokenInput.role,
   };
 
   const jti = randomUUID();
 
   const refreshTokenPayload = {
-    id: input.id,
+    id: insertTokenInput.id,
     jti,
   };
 
@@ -32,10 +34,12 @@ export default async function generateTokens(
     expiresIn: REFRESH_TOKEN_EXPIRES_TIME,
   });
 
-  await insertTokenRepository(
-    { id: input.id, jti, deviceId: input.device_id },
-    reason,
-  );
+  const refreshTokenInput: RefreshTokenInput = {
+    ...insertTokenInput,
+    jti,
+  };
+
+  await insertTokenRepository(refreshTokenInput, reason, previousJti);
 
   return { signedAccessToken, signedRefreshToken };
 }

@@ -7,12 +7,13 @@ import errorHandlerPlugin from "../plugins/error.handler.plugin";
 import rabbitMqPlugin from "../plugins/rabbit.mq.plugin";
 import rateLimitHandlerPlugin from "../plugins/rate.limit.handler.plugin";
 import responsePlugin from "../plugins/response.plugin";
+import env from "../core/config/env";
 
-export default function buildApp() {
+export default async function buildApp() {
   const app = fastify({ logger: true, trustProxy: true });
 
   // PLUGINS
-  app.register(fastifyCookie);
+  app.register(fastifyCookie, { secret: env.COOKIE_SECRET });
   app.register(rateLimitHandlerPlugin);
   app.register(responsePlugin);
   app.register(errorHandlerPlugin);

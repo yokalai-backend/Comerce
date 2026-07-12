@@ -16,7 +16,7 @@ export default function authRoute(app: FastifyInstance) {
       config: {
         rateLimit: {
           max: 10,
-          timeWindow: "1 hour",
+          timeWindow: "5 hour",
         },
       },
     },
@@ -55,12 +55,12 @@ export default function authRoute(app: FastifyInstance) {
     "/logout",
 
     {
-      config: {
-        rateLimit: {
-          max: 50,
-          timeWindow: "20 minute",
-        },
-      },
+      // config: {
+      //   rateLimit: {
+      //     max: 50,
+      //     timeWindow: "20 minute",
+      //   },
+      // },
       preValidation: verifyRefreshToken,
     },
     logoutUserController,

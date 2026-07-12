@@ -12,16 +12,7 @@ export default function internalRoute(app: FastifyInstance) {
 
   app.put(
     "/:userId",
-
-    {
-      config: {
-        rateLimit: {
-          max: 5,
-          timeWindow: "15 minute",
-        },
-      },
-      preValidation: validateParams(userIdSchema),
-    },
+    { preValidation: validateParams(userIdSchema) },
     updateUserController,
   );
 

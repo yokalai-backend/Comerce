@@ -7,6 +7,7 @@ const pool = new Pool({
   password: env.DB_PASSWORD,
   database: env.DATABASE,
   port: env.DB_PORT,
+  max: 20,
 });
 
 export default pool;

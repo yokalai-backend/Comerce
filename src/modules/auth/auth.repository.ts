@@ -2,7 +2,7 @@ import { DatabaseError } from "pg";
 import { PG_CHECK_VIOLATION, PG_UNIQUE_VIOLATION } from "../../constant";
 import pool from "../../core/config/db";
 import errors from "../../core/errors/errors";
-import { queryOne } from "../../core/utils/query/query";
+import { executeQuery, queryOne } from "../../core/utils/query/query";
 
 export async function createUserRepository(input: CreateUserRepositoryInput) {
   try {
@@ -30,24 +30,30 @@ export async function loginUserRepository(
   try {
     await client.query(`BEGIN`);
 
-    const device = await client.query<{ id: string }>(
-      `SELECT id FROM devices WHERE device_id = $1`,
-      [deviceId],
-    );
-
-    if (device.rowCount) {
-      const user = await client.query<UserRawDB>(
-        `SELECT id, username, role, hash FROM users WHERE email = $1 AND is_active = true`,
-        [input.email],
+    if (deviceId) {
+      console.log("DEVICE ID: ", deviceId);
+      const device = await client.query<{ id: string }>(
+        `SELECT id FROM devices WHERE device_id = $1`,
+        [deviceId],
       );
-      await client.query(`COMMIT`);
-      return user.rows[0];
+
+      if (device.rowCount) {
+        const user = await client.query<UserRawDB>(
+          `SELECT id, username, role, hash FROM users WHERE email = $1 AND is_active = true`,
+          [input.email],
+        );
+        await client.query(`COMMIT`);
+        return user.rows[0];
+      }
     }
 
     const user = await client.query<UserRawDB>(
       `SELECT id, username, role, hash FROM users WHERE email = $1 AND is_active = true FOR UPDATE`,
       [input.email],
     );
+
+    if (!user.rows[0]?.id)
+      throw errors.unAuthorized("Password or email invalid");
 
     const connectedDevices = await client.query(
       `SELECT id FROM devices WHERE user_id = $1 FOR UPDATE`,
@@ -59,11 +65,6 @@ export async function loginUserRepository(
         "Connected devices reach maximum",
         "CONNECTED_DEVICES_MAX",
       );
-
-    if (!user.rows[0]) {
-      await client.query(`ROLLBACK`);
-      throw errors.notFound("User not found", "USER_NOT_FOUND");
-    }
 
     await client.query(
       `INSERT INTO devices (user_id, device_id, ip_addr, agent) VALUES ($1, $2, $3, $4)`,
@@ -81,7 +82,7 @@ export async function loginUserRepository(
   }
 }
 
-export async function getUserById(userId: string) {
+export async function getAccessPayloadByIdRepository(userId: string) {
   return queryOne<{ username: string; role: string }>(
     `SELECT username, role FROM users WHERE id = $1 AND is_active = true`,
     [userId],
@@ -90,33 +91,41 @@ export async function getUserById(userId: string) {
 
 export async function insertTokenRepository(
   input: RefreshTokenInput,
-  reason: RefreshTokenErrorReason,
+  reason: RefreshedTokenReason,
+  previousJti?: string,
 ) {
   const client = await pool.connect();
 
   try {
     await client.query(`BEGIN`);
 
-    const deleteCurrentToken = await client.query(
-      `DELETE FROM refresh_tokens WHERE device_id = $1 RETURNING id`,
-      [input.deviceId],
-    );
-
-    if (deleteCurrentToken.rowCount) {
-      await client.query(
-        `INSERT INTO revoked_tokens (user_id, device_id, revoke_reason) VALUES ($1, $2, $3)`,
-        [input.id, input.deviceId, reason],
+    if (previousJti) {
+      await client.query<{ jti: string }>(
+        `DELETE FROM refresh_tokens WHERE jti = $1 RETURNING jti`,
+        [previousJti],
       );
     }
 
-    await client.query(
-      `INSERT INTO refresh_tokens (user_id, jti, device_id) VALUES ($1, $2, $3)`,
+    const newRefreshToken = await client.query<{ jti: string }>(
+      `INSERT INTO refresh_tokens (user_id, jti, device_id) VALUES ($1, $2, $3) RETURNING jti`,
       [input.id, input.jti, input.deviceId],
+    );
+
+    const newJti = newRefreshToken.rows[0].jti;
+
+    await client.query(
+      `INSERT INTO revoked_tokens (user_id, device_id, jti, prev_jti, ip_addr, revoke_reason) VALUES ($1, $2, $3, $4, $5, $6)`,
+      [input.id, input.deviceId, newJti, previousJti, input.ipAddress, reason],
     );
 
     await client.query(`COMMIT`);
   } catch (error) {
     await client.query(`ROLLBACK`);
+
+    if (error instanceof DatabaseError) {
+      if (error.code === PG_UNIQUE_VIOLATION)
+        throw errors.conflict("User already login", "ALREADY_LOGIN");
+    }
 
     throw error;
   } finally {
@@ -124,25 +133,32 @@ export async function insertTokenRepository(
   }
 }
 
-export async function revokeTokenRepository(
-  userId: string,
-  deviceId: string,
-  reason: RefreshTokenErrorReason,
-) {
-  if (!deviceId) throw errors.unAuthorized("Device not found");
+export async function getTokenRepository(jti: string) {
+  return queryOne<{ jti: string; device_id: string }>(
+    `SELECT jti, device_id FROM refresh_tokens WHERE jti = $1`,
+    [jti],
+  );
+}
 
+export async function revokeTokenRepository(
+  input: RefreshTokenInput,
+  reason: RefreshedTokenReason,
+) {
   const client = await pool.connect();
 
   try {
     await client.query(`BEGIN`);
 
-    await client.query(`DELETE FROM refresh_tokens WHERE device_id = $1`, [
-      deviceId,
+    await client.query(`DELETE FROM refresh_tokens WHERE jti = $1`, [
+      input.jti,
     ]);
-    await client.query(
-      `INSERT INTO revoked_tokens (user_id, device_id, revoke_reason) VALUES ($1, $2, $3)`,
-      [userId, deviceId, reason],
-    );
+
+    if (input.deviceId) {
+      await client.query(
+        `INSERT INTO revoked_tokens (user_id, device_id, jti, ip_addr, revoke_reason) VALUES ($1, $2, $3, $4, $5)`,
+        [input.id, input.deviceId, input.jti, input.ipAddress, reason],
+      );
+    }
 
     await client.query(`COMMIT`);
   } catch (error) {
